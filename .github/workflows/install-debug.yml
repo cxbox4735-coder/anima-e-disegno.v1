@@ -1,0 +1,57 @@
+name: Debug - Install system deps
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  debug-install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Set up JDK 17 (use v5 to avoid deprecation warning)
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Show distro info
+        run: |
+          echo "=== lsb_release ==="
+          lsb_release -a || true
+          echo "=== uname -a ==="
+          uname -a
+          echo "=== /etc/apt/sources.list (first 200 lines) ==="
+          sudo sed -n '1,200p' /etc/apt/sources.list || true
+
+      - name: Install system dependencies (debug)
+        run: |
+          set -x
+          sudo apt-get update || { echo "apt-get update failed"; exit 1; }
+          # assicurati di poter usare add-apt-repository
+          sudo apt-get install -y software-properties-common || true
+          # abilita universe (alcuni pacchetti sono lì)
+          sudo add-apt-repository universe || true
+          sudo apt-get update || { echo "apt-get update after add-apt-repository failed"; exit 1; }
+
+          # mostra policy e info sui pacchetti prima di installare
+          apt-cache policy libsdl2-dev libsdl2-image-dev libpng-dev libjpeg-dev zlib1g-dev || true
+          apt-cache policy docker.io || true
+
+          # tenta l'install (mostra output completo)
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            python3-pip python3-venv git zip unzip \
+            libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
+            libpng-dev libjpeg-dev zlib1g-dev docker.io
+          echo "apt-get exit: $?"
+
+      - name: Show installed packages (matching pattern)
+        run: |
+          dpkg -l | egrep 'python3-pip|libsdl2|libpng|libjpeg|zlib|docker' || true
