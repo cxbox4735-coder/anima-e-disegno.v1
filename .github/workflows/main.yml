@@ -17,17 +17,21 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Install dependencies
+    - name: Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential ccache git libffi-dev libssl-dev python3-dev libltdl-dev openjdk-17-jdk zip unzip
+        sudo apt-get install -y build-essential ccache git libffi-dev libssl-dev python3-dev libltdl-dev openjdk-17-jdk zip unzip ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixin-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
         python -m pip install --upgrade pip setuptools "cython<3.0"
         pip install git+https://github.com/kivy/buildozer.git
 
-    - name: Build APK with Buildozer
+    - name: Configure and Build APK
       run: |
         buildozer init
+        sed -i 's/title = My Application/title = AnimaE'Disegno/' buildozer.spec
+        sed -i 's/package.name = myapp/package.name = animadisegno/' buildozer.spec
+        sed -i 's/package.domain = org.test/package.domain = org.cxbox/' buildozer.spec
         sed -i 's/requirements = python3,kivy/requirements = python3,pygame/' buildozer.spec
+        sed -i 's/# android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
         yes | buildozer -v android debug
 
     - name: Upload APK Artifact
