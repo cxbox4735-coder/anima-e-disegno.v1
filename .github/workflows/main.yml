@@ -1,58 +1,22 @@
-name: Build APK
-on: [push]
+steps:
+  - name: Checkout repository
+    uses: actions/checkout@v4
 
-jobs:
-  build:
-    runs-on: ubuntu-22.04  # ← Usa Ubuntu 22.04, non 24.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'  # ← Python 3.10 compatibile con Ubuntu 22.04
+  - name: Set up Python
+    uses: actions/setup-python@v5
+    with:
+      python-version: '3.10'
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
-            python3-pip python3-venv git zip unzip openjdk-11-jdk \
-            libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
-            libpng-dev libjpeg-dev zlib1g-dev
-          sudo apt-get clean
+  - name: Set up JDK 17
+    uses: actions/setup-java@v4
+    with:
+      java-version: '17'
+      distribution: 'temurin'
 
-      - name: Install Buildozer
-        run: |
-          pip install buildozer cython
-
-      - name: Prepare project
-        run: |
-          mkdir -p app
-          cp main.py app/main.py
-          cat > app/buildozer.spec << 'EOF'
-          [app]
-          title = Disegna & Anima Pro
-          package.name = disegnaanima
-          package.domain = org.example
-          source.dir = .
-          source.include_exts = py,png,jpg,json
-          requirements = python3,pygame
-          orientation = landscape
-          fullscreen = 0
-          version = 1.0
-          android.archs = arm64-v8a
-          android.api = 33
-          android.minapi = 21
-          android.ndk = 25b
-          android.sdk = 33
-          android.permissions = INTERNET
-          EOF
-
-      - name: Build APK
-        run: |
-          cd app
-          buildozer android debug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: apk
-          path: app/bin/*.apk
+  - name: Install System Dependencies
+    run: |
+      sudo apt-get update
+      sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3-pip python3-venv git zip unzip \
+        libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
+        libpng-dev libjpeg-dev zlib1g-dev
