@@ -9,7 +9,7 @@ version = 1.0
 # requirements: aggiunti cython/setuptools/wheel che spesso servono in build
 requirements = python3, pygame, pillow, cython, setuptools, wheel
 
-# bootstrap & Android settings
+# bootstrap & Android settings (adatta se necessario)
 p4a.bootstrap = sdl2
 android.api = 33
 android.ndk = 25b
