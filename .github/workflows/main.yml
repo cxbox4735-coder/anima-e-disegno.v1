@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 180
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -61,22 +63,40 @@ jobs:
           else
             echo "No buildozer.spec found in repo root — skipping APK build"
           fi
+        timeout-minutes: 120
+
+      # DIAGNOSTICA: elenca file, cerca APK ovunque e comprime logs (.buildozer)
+      - name: Diagnose workspace (list bin/.buildozer)
+        if: always()
+        run: |
+          echo "=== find apk files ==="
+          find . -type f -iname "*.apk" -print || true
+          echo "=== list top-level bin ==="
+          ls -la bin || true
+          echo "=== list .buildozer ==="
+          ls -la .buildozer || true
+          echo "=== du .buildozer (size) ==="
+          du -sh .buildozer || true
+          # comprimi i log per upload
+          if [ -d .buildozer ]; then
+            tar -czf buildozer-logs.tar.gz .buildozer || true
+          fi
 
       - name: Upload APK artifact (if produced)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: app-apk
+          # upload ricorsivo: qualsiasi apk nella workspace
           path: |
-            bin/*.apk
-            bin/*.aab
+            **/*.apk
+            **/*.aab
 
-      - name: Save build logs
-        if: failure()
-        run: |
-          echo "Build failed. Collecting logs..."
-          ls -la || true
-          if [ -d .buildozer ]; then
-            tar -czf buildozer-logs.tar.gz .buildozer || true
-            ls -la buildozer-logs.tar.gz || true
-          fi
+      - name: Upload buildozer logs (if any)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: buildozer-logs
+          path: |
+            buildozer-logs.tar.gz
+            .buildozer/**/*
