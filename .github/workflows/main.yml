@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 240
+    timeout-minutes: 360
 
     steps:
       - name: Checkout repository
@@ -55,6 +55,13 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
+      - name: Add 4G swap (temporary)
+        run: |
+          sudo fallocate -l 4G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=4096
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+
       - name: Check Docker available
         run: |
           if ! command -v docker >/dev/null 2>&1; then
@@ -95,7 +102,7 @@ jobs:
             echo "All attempts failed. Exiting with $exit_code"
             exit $exit_code
           fi
-        timeout-minutes: 120
+        timeout-minutes: 180
 
       - name: Diagnose workspace (list and compress logs)
         if: always()
@@ -132,6 +139,12 @@ jobs:
             start=$((lineno>5 ? lineno-5 : 1))
             sed -n "${start},$((lineno+5))p" "$file" || true
           done
+
+      - name: Remove swap
+        if: always()
+        run: |
+          sudo swapoff /swapfile || true
+          sudo rm -f /swapfile || true
 
       - name: Upload APK artifact (if produced)
         if: always()
