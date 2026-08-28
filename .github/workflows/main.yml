@@ -111,6 +111,28 @@ jobs:
             du -sh .buildozer || true
           fi
 
+      - name: Extract p4a/build errors
+        if: always()
+        shell: bash
+        run: |
+          echo "Searching .buildozer for common error patterns (HTTP Error, Download failed, Killed, undefined reference, error:)"
+          if [ ! -d .buildozer ]; then
+            echo ".buildozer directory not found"
+            exit 0
+          fi
+
+          # find occurrences and print with context
+          grep -R -n -E "HTTP Error|Download failed|Killed|undefined reference|error:" .buildozer || true
+
+          # For each match, print file and 5 lines of context so it's easy to read in Actions UI
+          grep -R -n -E "HTTP Error|Download failed|Killed|undefined reference|error:" .buildozer | while IFS= read -r line; do
+            file="${line%%:*}"
+            lineno="${line#*:}"
+            echo "----- $file : $lineno -----"
+            start=$((lineno>5 ? lineno-5 : 1))
+            sed -n "${start},$((lineno+5))p" "$file" || true
+          done
+
       - name: Upload APK artifact (if produced)
         if: always()
         uses: actions/upload-artifact@v4
