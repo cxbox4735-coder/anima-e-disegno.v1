@@ -477,7 +477,7 @@ class App:
             self.screen = pygame.display.set_mode((self.w, self.h), pygame.RESIZABLE)
 
         pygame.display.set_caption(f"Disegna & Anima Pro v{VERSION}")
-        print(f"Schermo inizializzato: {self.w}x{self.h}")  # Log per debug
+        print(f"Schermo inizializzato: {self.w}x{self.h}")
 
         self.clock = pygame.time.Clock()
         self.running = True
@@ -729,7 +729,10 @@ class App:
                 self.running = False; return
             if event.type == pygame.VIDEORESIZE:
                 self.w, self.h = event.size
-                self.screen = pygame.display.set_mode((self.w, self.h), pygame.RESIZABLE)
+                if IS_ANDROID:
+                    self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+                else:
+                    self.screen = pygame.display.set_mode((self.w, self.h), pygame.RESIZABLE)
                 self.scale_factor = min(self.w, self.h) / 720.0
                 self.scale_factor = max(0.8, min(1.5, self.scale_factor))
                 self.build_ui()
@@ -809,7 +812,10 @@ class App:
                 self.running = False; return
             if event.type == pygame.VIDEORESIZE:
                 self.w, self.h = event.size
-                self.screen = pygame.display.set_mode((self.w, self.h), pygame.RESIZABLE)
+                if IS_ANDROID:
+                    self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+                else:
+                    self.screen = pygame.display.set_mode((self.w, self.h), pygame.RESIZABLE)
                 self.scale_factor = min(self.w, self.h) / 720.0
                 self.scale_factor = max(0.8, min(1.5, self.scale_factor))
                 self.build_ui()
@@ -894,7 +900,10 @@ class App:
                 self.running = False; return
             if event.type == pygame.VIDEORESIZE:
                 self.w, self.h = event.size
-                self.screen = pygame.display.set_mode((self.w, self.h), pygame.RESIZABLE)
+                if IS_ANDROID:
+                    self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+                else:
+                    self.screen = pygame.display.set_mode((self.w, self.h), pygame.RESIZABLE)
                 self.scale_factor = min(self.w, self.h) / 720.0
                 self.scale_factor = max(0.8, min(1.5, self.scale_factor))
                 self.build_ui()
@@ -1348,7 +1357,10 @@ class App:
                 self.running = False; return
             if event.type == pygame.VIDEORESIZE:
                 self.w, self.h = event.size
-                self.screen = pygame.display.set_mode((self.w, self.h), pygame.RESIZABLE)
+                if IS_ANDROID:
+                    self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+                else:
+                    self.screen = pygame.display.set_mode((self.w, self.h), pygame.RESIZABLE)
                 self.scale_factor = min(self.w, self.h) / 720.0
                 self.scale_factor = max(0.8, min(1.5, self.scale_factor))
                 self.build_ui()
