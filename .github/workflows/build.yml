@@ -45,7 +45,21 @@ jobs:
             -v "$(pwd)/docker/buildozer":/root/.buildozer \
             -v "$(pwd)/docker/gradle":/root/.gradle \
             -v "$(pwd)/game":/root/hostcwd \
-            kivy/buildozer -v android debug
+            kivy/buildozer -v android debug 2>&1 | tee buildozer.log
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: buildozer-failure-log
+          path: buildozer.log
+
+      - name: Show last 100 lines on failure
+        if: failure()
+        run: |
+          echo "========== LAST 100 LINES OF BUILD LOG =========="
+          tail -n 100 buildozer.log || true
+          echo "================================================="
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
