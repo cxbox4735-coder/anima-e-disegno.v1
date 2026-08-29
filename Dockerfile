@@ -1,11 +1,5 @@
 FROM python:3.11-slim
 
-ENV USER="user"
-ENV HOME="/home/${USER}"
-ENV HOME_DIR="/home/${USER}"
-ENV WORK_DIR="${HOME_DIR}/hostcwd" \
-    SRC_DIR="${HOME_DIR}/src" \
-    PATH="${HOME_DIR}/.local/bin:${PATH}"
 ENV LANG="en_US.UTF-8" \
     LANGUAGE="en_US.UTF-8" \
     LC_ALL="en_US.UTF-8"
@@ -38,10 +32,7 @@ RUN apt update -qq > /dev/null \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
     && rm -rf /var/lib/apt/lists/*
 
-RUN useradd --create-home --shell /bin/bash ${USER}
-RUN usermod -append --groups sudo ${USER}
-RUN echo "%sudo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-
+# Installa buildozer e dipendenze globalmente (come root)
 RUN pip install --upgrade \
     buildozer \
     "Cython<0.30" \
@@ -54,7 +45,7 @@ RUN pip install --upgrade \
     toml \
     build
 
-USER ${USER}
-WORKDIR ${WORK_DIR}
+# Nessun USER switch: in CI/CD lavoriamo come root per evitare problemi di permessi
+WORKDIR /root/hostcwd
 
 ENTRYPOINT ["buildozer"]
