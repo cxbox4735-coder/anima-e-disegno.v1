@@ -1,0 +1,43 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Scarica il codice
+        uses: actions/checkout@v4
+
+      - name: Cache build (velocizza le prossime volte)
+        uses: actions/cache@v4
+        with:
+          path: |
+            docker/buildozer
+            docker/gradle
+          key: buildozer-cache-${{ runner.os }}-${{ hashFiles('game/buildozer.spec') }}
+          restore-keys: |
+            buildozer-cache-${{ runner.os }}-
+
+      - name: Crea immagine Docker
+        run: docker build -t kivy/buildozer .
+
+      - name: Compila APK
+        run: |
+          mkdir -p docker/buildozer docker/gradle
+          docker run --rm \
+            -u "$(id -u):$(id -g)" \
+            -v "$(pwd)/docker/buildozer":/home/user/.buildozer \
+            -v "$(pwd)/docker/gradle":/home/user/.gradle \
+            -v "$(pwd)/game":/home/user/hostcwd \
+            kivy/buildozer -v android debug
+
+      - name: Salva APK come download
+        uses: actions/upload-artifact@v4
+        with:
+          name: Disegna-e-Anima-Pro-APK
+          path: game/bin/*.apk
+          if-no-files-found: error
