@@ -1,0 +1,32 @@
+# game/buildozer.spec
+# Sposta questo file in game/buildozer.spec
+
+[app]
+
+title = Disegna e Anima Pro
+package.name = disegnaanima
+package.domain = org.tuo.nome
+source.dir = .
+source.include_exts = py,png,jpg,kv,atlas,json,txt
+
+version = 1.0
+
+requirements = python3,pygame-ce
+
+orientation = landscape
+fullscreen = 1
+
+android.api = 34
+android.minapi = 21
+android.ndk_api = 21
+android.archs = arm64-v8a, armeabi-v7a
+android.accept_sdk_license = True
+
+# Permessi per salvare/esportare (opzionale ma consigliato)
+android.permissions = WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
+
+p4a.local_recipes = ./p4a-recipes
+
+[buildozer]
+log_level = 2
+warn_on_root = 1
