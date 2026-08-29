@@ -36,23 +36,34 @@ jobs:
           python -m pip install --upgrade pip
           pip install buildozer cython
 
-      - name: Accept SDK licenses
+      - name: Accept Android SDK licenses
         run: |
           mkdir -p ~/.android
-          echo "y" > /tmp/licenses.txt
-          while read line; do echo "y"; done < /dev/zero | \
-            $JAVA_HOME/bin/keytool -genkey -v -keystore ~/.android/debug.keystore \
-            -keyalg RSA -keysize 2048 -validity 10000 -alias androiddebugkey \
-            -keypass android -storepass android \
-            -dname "CN=Android Debug,O=Android,C=US" 2>/dev/null || true
+          echo '<?xml version="1.0" encoding="UTF-8"?>
+          <licenses>
+            <license id="android-sdk-license" type="user">
+              <accepted-by>build</accepted-by>
+              <accepted-on>1640000000000</accepted-on>
+            </license>
+            <license id="android-sdk-preview-license" type="user">
+              <accepted-by>build</accepted-by>
+              <accepted-on>1640000000000</accepted-on>
+            </license>
+            <license id="intel-android-extra-license" type="user">
+              <accepted-by>build</accepted-by>
+              <accepted-on>1640000000000</accepted-on>
+            </license>
+            <license id="mips-android-system-image-license" type="user">
+              <accepted-by>build</accepted-by>
+              <accepted-on>1640000000000</accepted-on>
+            </license>
+          </licenses>' > ~/.android/licenses.xml
+        shell: bash
 
       - name: Build APK Debug
         run: |
           buildozer -v android debug
         timeout-minutes: 120
-        env:
-          ANDROID_SDK_LICENSE: "y"
-          ANDROID_NDK_LICENSE: "y"
 
       - name: Upload APK on success
         uses: actions/upload-artifact@v4
@@ -60,3 +71,9 @@ jobs:
         with:
           name: android-apk
           path: bin/*.apk
+
+      - name: Show error logs if failed
+        if: failure()
+        run: |
+          echo "=== Last buildozer output ===" 
+          cat .buildozer/android/platform/build/build.log 2>/dev/null | tail -50 || echo "No log found"
