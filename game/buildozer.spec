@@ -8,7 +8,7 @@ source.include_exts = py,png,jpg,kv,atlas,json,txt
 
 version = 1.0
 
-requirements = hostpython3==3.11.9,python3==3.11.9,cython==0.29.37,pygame-ce
+requirements = hostpython3==3.11.9,python3==3.11.9,cython==0.29.37,pygame-ce,sdl2,android
 
 orientation = landscape
 fullscreen = 1
