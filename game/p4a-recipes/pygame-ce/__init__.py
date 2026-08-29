@@ -1,4 +1,3 @@
-# game/p4a-recipes/pygame-ce/__init__.py
 from os.path import join
 from pythonforandroid.recipe import CompiledComponentsPythonRecipe
 from pythonforandroid.toolchain import current_directory
@@ -7,7 +6,7 @@ from pythonforandroid.toolchain import current_directory
 class Pygame2Recipe(CompiledComponentsPythonRecipe):
     version = "2.5.0"
     url = "https://github.com/pygame-community/pygame-ce/archive/refs/tags/{version}.tar.gz"
-    site_packages_name = "pygame-ce"
+    site_packages_name = "pygame"   # ✅ CORRETTO: il modulo si importa come "pygame"
     name = "pygame-ce"
 
     depends = [
