@@ -32,7 +32,7 @@ RUN apt update -qq > /dev/null \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
     && rm -rf /var/lib/apt/lists/*
 
-# Installa buildozer e dipendenze globalmente (come root)
+# Buildozer e dipendenze
 RUN pip install --upgrade \
     buildozer \
     virtualenv \
@@ -44,9 +44,8 @@ RUN pip install --upgrade \
     toml \
     build
 
-# IMPORTANTE: Cython va installato con --user perché il hostpython3 di p4a
-# (quello che compila le estensioni C) vede solo i pacchetti user-site
-RUN pip install --user --upgrade "Cython<0.30"
+# Allineato con buildozer.spec: Cython 0.29.37 (stabile con Python 3.11)
+RUN pip install --user --upgrade "Cython==0.29.37"
 
 WORKDIR /root/hostcwd
 
