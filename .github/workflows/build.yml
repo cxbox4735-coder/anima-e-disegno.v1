@@ -18,19 +18,57 @@ jobs:
           path: |
             docker/buildozer
             docker/gradle
-          key: buildozer-cache-${{ runner.os }}-${{ hashFiles('game/buildozer.spec') }}
+          # La chiave include l'hash del Dockerfile e buildozer.spec:
+          # quando li modifichi, la cache viene automaticamente invalidata
+          key: buildozer-cache-${{ runner.os }}-${{ hashFiles('Dockerfile', 'game/buildozer.spec') }}
           restore-keys: |
             buildozer-cache-${{ runner.os }}-
+
+      # Se la cache è vecchia, forza la ricostruzione di hostpython3
+      - name: Clean stale hostpython3
+        run: |
+          rm -rf docker/buildozer/android/platform/build-*/build/other_builds/hostpython3
+          rm -rf docker/buildozer/android/platform/build-*/build/other_builds/pygame-ce
+          mkdir -p docker/buildozer docker/gradle
 
       - name: Build Docker image
         run: docker build -t kivy/buildozer .
 
+      - name: Set permissions
+        run: |
+          chmod -R 777 docker/buildozer docker/gradle
+          chmod -R 777 game
+
+      # Prima passata: scarica SDK/NDK e costruisce hostpython3.
+      # Fallirà su pygame-ce (manca Cython), ma hostpython3 verrà creato.
+      - name: Bootstrap Buildozer (create hostpython3)
+        run: |
+          docker run --rm \
+            --user root \
+            -v "$(pwd)/docker/buildozer":/root/.buildozer \
+            -v "$(pwd)/docker/gradle":/root/.gradle \
+            -v "$(pwd)/game":/root/hostcwd \
+            kivy/buildozer -v android debug || true
+
+      # Installa Cython dentro l'hostpython3 appena creato
+      - name: Install Cython in hostpython3
+        run: |
+          HPY=$(find docker/buildozer/android/platform/build-*/build/other_builds/hostpython3/desktop/hostpython3/native-build/root/usr/local/bin/python -print -quit 2>/dev/null || true)
+          if [ -n "$HPY" ]; then
+            echo "Found hostpython3 at: $HPY"
+            docker run --rm \
+              --user root \
+              -v "$(pwd)/docker/buildozer":/root/.buildozer \
+              -v "$(pwd)/game":/root/hostcwd \
+              kivy/buildozer \
+              bash -c "$HPY -m ensurepip && $HPY -m pip install 'Cython<0.30'"
+          else
+            echo "WARNING: hostpython3 not found, build will likely fail"
+          fi
+
+      # Build vera e propria: ora hostpython3 ha Cython e pygame-ce compila
       - name: Build APK
         run: |
-          mkdir -p docker/buildozer docker/gradle
-          chmod -R 777 docker/buildozer docker/gradle
-          # FIX: dai i permessi di scrittura alla cartella game
-          chmod -R 777 game
           docker run --rm \
             --user root \
             -v "$(pwd)/docker/buildozer":/root/.buildozer \
