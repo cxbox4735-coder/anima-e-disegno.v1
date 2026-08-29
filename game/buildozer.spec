@@ -8,8 +8,8 @@ source.include_exts = py,png,jpg,kv,atlas,json,txt
 
 version = 1.0
 
-# Pin Python to 3.11 to match the Cython version installed in the build image
-requirements = python3==3.11.16,cython,pygame-ce
+# Pin hostpython3 + python3 to 3.11 so hostpython and target python match
+requirements = hostpython3==3.11.16,python3==3.11.16,cython,pygame-ce
 
 orientation = landscape
 fullscreen = 1
