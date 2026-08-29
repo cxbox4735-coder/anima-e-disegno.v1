@@ -18,27 +18,16 @@ jobs:
           path: |
             docker/buildozer
             docker/gradle
-          # La chiave include l'hash del Dockerfile e buildozer.spec:
-          # quando li modifichi, la cache viene automaticamente invalidata
           key: buildozer-cache-${{ runner.os }}-${{ hashFiles('Dockerfile', 'game/buildozer.spec') }}
           restore-keys: |
             buildozer-cache-${{ runner.os }}-
 
-      # Forza cancellazione ampia della cache così hostpython3 verrà ricostruito
-      - name: Clean stale hostpython3
+      # PULIZIA CACHE: rimuove Python 3.14 o build corrotti da cache vecchia
+      - name: Clean stale builds
         run: |
-          # Remove any cached python-for-android platforms, dists and related SDK/NDK
-          rm -rf docker/buildozer/android/platform || true
-          rm -rf docker/buildozer/android/platform_* || true
-          rm -rf docker/buildozer/apache-ant-* || true
-          rm -rf docker/buildozer/android/sdk || true
-          rm -rf docker/buildozer/android/ndk-* || true
-          rm -rf docker/buildozer/android/ndk || true
-          # Remove any previously-built dists and builds
-          rm -rf docker/buildozer/android/platform/build-* || true
-          rm -rf docker/buildozer/android/platform/dists || true
-          rm -rf docker/buildozer/android/platform/build || true
-          # Ensure dirs exist for mounts
+          rm -rf docker/buildozer/android/platform/build-*/build/other_builds/python3
+          rm -rf docker/buildozer/android/platform/build-*/build/other_builds/hostpython3
+          rm -rf docker/buildozer/android/platform/build-*/dists
           mkdir -p docker/buildozer docker/gradle
 
       - name: Build Docker image
@@ -49,33 +38,7 @@ jobs:
           chmod -R 777 docker/buildozer docker/gradle
           chmod -R 777 game
 
-      # Prima passata: scarica SDK/NDK e costruisce hostpython3
-      - name: Bootstrap Buildozer (create hostpython3)
-        run: |
-          docker run --rm \
-            --user root \
-            -v "$(pwd)/docker/buildozer":/root/.buildozer \
-            -v "$(pwd)/docker/gradle":/root/.gradle \
-            -v "$(pwd)/game":/root/hostcwd \
-            kivy/buildozer -v android debug || true
-
-      # Installa Cython dentro l'hostpython3 appena creato
-      - name: Install Cython in hostpython3
-        run: |
-          HPY=$(find docker/buildozer/android/platform/build-*/build/other_builds/hostpython3/desktop/hostpython3/native-build/root/usr/local/bin/python -print -quit 2>/dev/null || true)
-          if [ -n "$HPY" ]; then
-            echo "Found hostpython3 at: $HPY"
-            docker run --rm \
-              --user root \
-              -v "$(pwd)/docker/buildozer":/root/.buildozer \
-              -v "$(pwd)/game":/root/hostcwd \
-              kivy/buildozer \
-              bash -c "$HPY -m ensurepip && $HPY -m pip install 'Cython<0.30'"
-          else
-            echo "WARNING: hostpython3 not found, build will likely fail"
-          fi
-
-      # Build vera e propria: ora hostpython3 ha Cython e pygame-ce compila
+      # Build unico: Python 3.11.9 + Cython 0.29.37 + pygame-ce
       - name: Build APK
         run: |
           docker run --rm \
