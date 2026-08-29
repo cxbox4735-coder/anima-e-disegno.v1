@@ -1,8 +1,8 @@
-
 """
 ============================================================
   DISEGNA & ANIMA PRO — v1.0 RELEASE UFFICIALE
   Mobile First • Pydroid/Android • UI touch-friendly
+  Modificato per compatibilità Android
 ============================================================
 """
 
@@ -16,6 +16,12 @@ from datetime import datetime
 
 # IMPORTANTE per Android: prima di pygame.init()
 os.environ['SDL_MOUSE_TOUCHID'] = '0'
+
+# Rileva se siamo su Android
+IS_ANDROID = 'ANDROID_ARGUMENT' in os.environ
+
+# Directory sicura per salvataggi (funziona su tutte le piattaforme)
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
 
 pygame.init()
 
@@ -460,11 +466,19 @@ ICONS = {k: getattr(Icon, k) for k in [
 # ─── APP PRINCIPALE ─────────────────────────────────────
 class App:
     def __init__(self):
-        info = pygame.display.Info()
-        self.w = info.current_w if info.current_w > 0 else 1280
-        self.h = info.current_h if info.current_h > 0 else 720
-        self.screen = pygame.display.set_mode((self.w, self.h), pygame.RESIZABLE)
+        # Inizializzazione schermo adattiva
+        if IS_ANDROID:
+            self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+            self.w, self.h = self.screen.get_size()
+        else:
+            info = pygame.display.Info()
+            self.w = info.current_w if info.current_w > 0 else 1280
+            self.h = info.current_h if info.current_h > 0 else 720
+            self.screen = pygame.display.set_mode((self.w, self.h), pygame.RESIZABLE)
+
         pygame.display.set_caption(f"Disegna & Anima Pro v{VERSION}")
+        print(f"Schermo inizializzato: {self.w}x{self.h}")  # Log per debug
+
         self.clock = pygame.time.Clock()
         self.running = True
 
@@ -659,7 +673,6 @@ class App:
         cww = int(self.canvas_w * z)
         chh = int(self.canvas_h * z)
 
-        # Applica i limiti al pan
         self.clamp_pan()
 
         cx = (cw - cww) // 2 + self.pan_x
@@ -746,9 +759,9 @@ class App:
 
     def load_project_dialog(self):
         try:
-            files = [f for f in os.listdir(".") if f.endswith(".json")]
+            files = [f for f in os.listdir(APP_DIR) if f.endswith(".json")]
             if files:
-                files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
+                files.sort(key=lambda x: os.path.getmtime(os.path.join(APP_DIR, x)), reverse=True)
                 self.load_project(files[0])
                 self.state = "editor"
                 self.build_ui()
@@ -818,7 +831,6 @@ class App:
         fnt = get_font(int(32 * self.scale_factor))
         fnt_small = get_font(int(22 * self.scale_factor))
 
-        # Offset per scroll
         off_y = -self.np_scroll_y
 
         title = fnt_big.render("Nuovo Progetto", True, C_ACCENT)
@@ -851,7 +863,6 @@ class App:
                 pygame.draw.ellipse(self.screen, C_ACCENT, rect, 4)
             self.np_color_rects.append(rect)
 
-        # Bottoni responsive: larghezza dinamica e margine adattivo
         margin = 20
         bw = (self.w - margin*3) // 2
         bh = int(70 * self.scale_factor)
@@ -867,7 +878,6 @@ class App:
         self.np_back_rect = back_r
         self.np_ok_rect = ok_r
 
-        # Calcolo max scroll corretto: usa lo spazio sopra i bottoni
         fixed_bottom = bh + margin*3
         last_scrollable_y = cy + cr*2 + 40
         self.np_max_scroll = max(0, last_scrollable_y - (self.h - fixed_bottom))
@@ -891,23 +901,20 @@ class App:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button != 1: continue
                 pos = event.pos
-                # Verifica bottoni fissi
                 if self.np_back_rect.collidepoint(pos):
                     self.state = "menu"; self.build_ui(); return
                 if self.np_ok_rect.collidepoint(pos):
                     self.create_project(); return
-                # Elementi scrollabili (già traslati)
                 for i, rect in enumerate(self.np_field_rects):
                     if rect.collidepoint(pos):
                         self.newp_selected_field = i; return
                 for i, rect in enumerate(self.np_color_rects):
                     if rect.collidepoint(pos):
                         self.newp_selected_color = i; return
-                # Inizia drag per scroll (solo se non su un bottone)
                 self.np_drag_start_y = pos[1]
                 self.np_scroll_start = self.np_scroll_y
             if event.type == pygame.MOUSEMOTION:
-                if self.np_drag_start_y is not None:  # rimosso controllo event.buttons
+                if self.np_drag_start_y is not None:
                     dy = event.pos[1] - self.np_drag_start_y
                     self.np_scroll_y = self.np_scroll_start - dy
                     self.np_scroll_y = max(-self.np_max_scroll, min(0, self.np_scroll_y))
@@ -1014,7 +1021,6 @@ class App:
 
         # Canvas
         self.draw_canvas()
-        # Anteprima live separata
         if self.drawing and self.current_points:
             self.draw_preview()
 
@@ -1043,13 +1049,11 @@ class App:
         pygame.display.flip()
 
     def draw_preview(self):
-        """Disegna il tratto corrente direttamente sullo schermo usando le coordinate screen."""
         if not self.current_points:
             return
         z = self.base_zoom * self.zoom
         if z == 0:
             return
-        # Converti punti locali in coordinate schermo
         screen_points = []
         for lp in self.current_points:
             sx = self.canvas_rect.x + int(lp[0] * z)
@@ -1096,7 +1100,6 @@ class App:
         half_w = (w - 40) // 2
         btn_h = max(60, int(45 * self.scale_factor))
 
-        # Aggiungi (full)
         rect = pygame.Rect(x + 15, y, w - 30, btn_h)
         pygame.draw.rect(self.screen, C_GREEN, rect, border_radius=10)
         ir = pygame.Rect(0, 0, 24, 24); ir.center = (rect.x + 25, rect.centery)
@@ -1106,7 +1109,6 @@ class App:
         self.side_btn_rects.append((rect, self.spawn_stickman))
         y += btn_h + 6
 
-        # Grande | Piccolo
         r1 = pygame.Rect(x + 15, y, half_w, btn_h)
         r2 = pygame.Rect(x + 15 + half_w + 10, y, half_w, btn_h)
         for r, ic, txt, act in [(r1, "resize_up", "Grande", self.grow_stickman), (r2, "resize_down", "Piccolo", self.shrink_stickman)]:
@@ -1118,7 +1120,6 @@ class App:
             self.side_btn_rects.append((r, act))
         y += btn_h + 6
 
-        # Reset | Tema
         r1 = pygame.Rect(x + 15, y, half_w, btn_h)
         r2 = pygame.Rect(x + 15 + half_w + 10, y, half_w, btn_h)
         for r, ic, txt, act in [(r1, "reset", "Reset", self.reset_stickman_pose), (r2, "settings", "Tema", self.toggle_theme)]:
@@ -1130,7 +1131,6 @@ class App:
             self.side_btn_rects.append((r, act))
         y += btn_h + 6
 
-        # Spessore + | -
         r1 = pygame.Rect(x + 15, y, half_w, btn_h)
         r2 = pygame.Rect(x + 15 + half_w + 10, y, half_w, btn_h)
         for r, txt, act in [(r1, "Size+", self.inc_brush), (r2, "Size-", self.dec_brush)]:
@@ -1140,7 +1140,6 @@ class App:
             self.side_btn_rects.append((r, act))
         y += btn_h + 6
 
-        # Pulisci (full)
         rect = pygame.Rect(x + 15, y, w - 30, btn_h)
         pygame.draw.rect(self.screen, C_RED, rect, border_radius=10)
         t2 = fnt_small.render("Pulisci Canvas", True, C_WHITE)
@@ -1148,14 +1147,12 @@ class App:
         self.side_btn_rects.append((rect, self.clear_canvas))
         y += btn_h + 12
 
-        # Info spessore
         t2 = fnt_small.render(f"Spessore: {self.brush_size}", True, C_TEXT_DIM)
         self.screen.blit(t2, (x + 15, y)); y += 22
 
         t = fnt.render("Mod", True, C_TEXT)
         self.screen.blit(t, (x + 15, y)); y += 26
 
-        # Luffy | Ragdoll
         r1 = pygame.Rect(x + 15, y, half_w, btn_h)
         r2 = pygame.Rect(x + 15 + half_w + 10, y, half_w, btn_h)
         for r, (txt, ic, active, act) in zip([r1, r2], [
@@ -1170,7 +1167,6 @@ class App:
             self.side_btn_rects.append((r, act))
         y += btn_h + 6
 
-        # Stacca (full)
         rect = pygame.Rect(x + 15, y, w - 30, btn_h)
         col = C_ACCENT if self.detach_mode else C_PANEL_L
         pygame.draw.rect(self.screen, col, rect, border_radius=10)
@@ -1285,26 +1281,21 @@ class App:
         if z > 0:
             try:
                 scaled = pygame.transform.scale(self.canvas_surf, (int(self.canvas_w * z), int(self.canvas_h * z)))
-                # Clipping al viewport
                 visible_rect = self.canvas_rect.clip(self.viewport_rect)
                 if visible_rect.width > 0 and visible_rect.height > 0:
-                    # Calcola l'area sorgente corrispondente
                     src_x = visible_rect.x - self.canvas_rect.x
                     src_y = visible_rect.y - self.canvas_rect.y
                     self.screen.blit(scaled, (visible_rect.x, visible_rect.y),
                                      area=(src_x, src_y, visible_rect.width, visible_rect.height))
-                # Bordo del viewport
                 pygame.draw.rect(self.screen, C_ACCENT, self.viewport_rect, 2)
             except:
                 pass
 
     def draw_osk(self):
-        # Altezza limitata a 320 px o 28% dello schermo
         kb_h = min(320, int(self.h * 0.28))
         kb_y = self.h - kb_h
         pygame.draw.rect(self.screen, C_PANEL, (0, kb_y, self.w, kb_h))
 
-        # Anteprima testo vicino al punto di inserimento
         if self.osk_text_target_pos:
             z = self.base_zoom * self.zoom
             if z > 0:
@@ -1312,19 +1303,16 @@ class App:
                 sy = self.canvas_rect.y + int(self.osk_text_target_pos[1] * z)
                 fnt_prev = get_font(int(28 * self.scale_factor))
                 prev_surf = fnt_prev.render(self.osk_buffer + "|", True, C_WHITE)
-                # Disegna un piccolo sfondo
                 pad = 8
                 bg_rect = pygame.Rect(sx - pad, sy - prev_surf.get_height() - pad,
                                       prev_surf.get_width() + pad*2, prev_surf.get_height() + pad*2)
                 pygame.draw.rect(self.screen, (50,50,60), bg_rect, border_radius=8)
                 self.screen.blit(prev_surf, (sx, sy - prev_surf.get_height()))
             else:
-                # Fallback: mostra in alto
                 fnt_prev = get_font(int(28 * self.scale_factor))
                 prev_surf = fnt_prev.render(self.osk_buffer + "|", True, C_WHITE)
                 self.screen.blit(prev_surf, (20, 20))
 
-        # Tasti QWERTY con dimensioni minime 55x65
         rows = ["1234567890", "QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"]
         key_w = max(55, min(int(80 * self.scale_factor), int(self.w / 12)))
         key_h = max(65, int(60 * self.scale_factor))
@@ -1341,7 +1329,6 @@ class App:
                 self.screen.blit(t, (rect.centerx - t.get_width()//2, rect.centery - t.get_height()//2))
                 self.osk_keys.append((rect, ch, "char"))
 
-        # Tasti speciali + Cancel
         sp_y = start_y + len(rows)*(key_h+gap) + 10
         sp_w = max(80, int(120 * self.scale_factor))
         specials = [("Spazio", "space"), ("Canc", "back"), ("Invio", "enter"), ("Annulla", "cancel")]
@@ -1366,7 +1353,16 @@ class App:
                 self.scale_factor = max(0.8, min(1.5, self.scale_factor))
                 self.build_ui()
 
-            # Gestione tastiera on-screen
+            # Gestione pausa/ripresa Android
+            if event.type == pygame.APP_WILLENTERBACKGROUND:
+                self.is_playing = False
+                self.drawing = False
+                self.toolbar_dragging = False
+                print("App in background")
+            elif event.type == pygame.APP_DIDENTERFOREGROUND:
+                self.canvas_dirty = True
+                print("App in foreground")
+
             if self.osk_active:
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     for rect, val, action in self.osk_keys:
@@ -1395,14 +1391,12 @@ class App:
                                 self.osk_buffer = ""
                                 self.osk_text_target_pos = None
                             return
-                # Ignora altri eventi finché tastiera attiva
                 continue
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     self._mouse_down(event)
             elif event.type == pygame.MOUSEMOTION:
-                # Nessun controllo su event.buttons, usiamo stato interno
                 self._mouse_move(event)
             elif event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
@@ -1502,7 +1496,6 @@ class App:
                     self.save_undo()
                     self.spawn_stickman()
                 elif not hit:
-                    # Inizia pan del canvas
                     self.active_stickman = None
                     self.toolbar_dragging = False
                     self.pan_start_x = pos[0]
@@ -1533,7 +1526,6 @@ class App:
             self.toolbar_last_mouse_x = pos[0]
             return
 
-        # Pan del canvas con la mano
         if self.tool == "hand" and not self.active_stickman:
             if self.pan_start_x is not None:
                 dx = pos[0] - self.pan_start_x
@@ -1541,7 +1533,7 @@ class App:
                 self.pan_x = self.pan_start_pan_x + dx
                 self.pan_y = self.pan_start_pan_y + dy
                 self.clamp_pan()
-                self.update_canvas_rect()  # metodo leggero, non rebuild
+                self.update_canvas_rect()
             return
 
         if not self.canvas_rect.collidepoint(pos): return
@@ -1555,7 +1547,6 @@ class App:
                 self.canvas_dirty = True
         elif self.drawing:
             self.current_points.append(lp)
-            # non settare canvas_dirty: l'anteprima è disegnata separatamente
 
     def _mouse_up(self, event):
         if event.button != 1: return
@@ -1563,7 +1554,6 @@ class App:
         self.tap_start_pos = None
         self.touch_down = False
 
-        # Pulizia pan
         self.pan_start_x = None
         self.pan_start_y = None
         self.pan_start_pan_x = 0
@@ -1576,7 +1566,6 @@ class App:
         elif self.drawing:
             self.drawing = False
             if self.tool in ("pen","eraser") and len(self.current_points) > 1:
-                # Deep copy dei punti
                 pts_copy = [list(p) for p in self.current_points]
                 self.frames[self.current_frame].append({
                     "points": pts_copy, "color": self.color,
@@ -1873,7 +1862,7 @@ class App:
                         "joints": {n:{"x":j.pos.x,"y":j.pos.y,"pinned":j.pinned} for n,j in sm.joints.items()},
                         "detached": list(sm.detached)})
                 data["stickmen"][str(fidx)] = sm_list
-            fname = f"{self.project_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            fname = os.path.join(APP_DIR, f"{self.project_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
             with open(fname, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2)
             self.show_toast(f"Salvato: {fname}")
@@ -1934,7 +1923,7 @@ class App:
 
     def export_png(self):
         try:
-            folder = f"export_{self.project_name}"
+            folder = os.path.join(APP_DIR, f"export_{self.project_name}")
             if not os.path.exists(folder): os.makedirs(folder)
             for idx in range(len(self.frames)):
                 surf = pygame.Surface((self.canvas_w, self.canvas_h))
