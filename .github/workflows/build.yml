@@ -8,12 +8,15 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 360
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Cache build
+      - name: Check disk space before
+        run: df -h
+
+      - name: Cache buildozer
         uses: actions/cache@v4
         with:
           path: |
@@ -23,20 +26,22 @@ jobs:
           restore-keys: |
             buildozer-cache-${{ runner.os }}-
 
-      - name: Clean stale builds
+      - name: Cache p4a build
+        uses: actions/cache@v4
+        with:
+          path: game/.buildozer/android/platform/build-*
+          key: p4a-build-${{ runner.os }}-${{ hashFiles('game/buildozer.spec') }}
+          restore-keys: |
+            p4a-build-${{ runner.os }}-
+
+      - name: Ensure directories exist
         run: |
-          rm -rf docker/buildozer/android/platform/build-*/build/other_builds/python3
-          rm -rf docker/buildozer/android/platform/build-*/build/other_builds/hostpython3
-          rm -rf docker/buildozer/android/platform/build-*/dists
           mkdir -p docker/buildozer docker/gradle
+          chmod -R 777 docker/buildozer docker/gradle
+          chmod -R 777 game
 
       - name: Build Docker image
         run: docker build -t kivy/buildozer .
-
-      - name: Set permissions
-        run: |
-          chmod -R 777 docker/buildozer docker/gradle
-          chmod -R 777 game
 
       - name: Build APK
         run: |
@@ -47,7 +52,6 @@ jobs:
             -v "$(pwd)/game":/root/hostcwd \
             kivy/buildozer -v android debug 2>&1 | tee buildozer.log
           
-          # ✅ IMPORTANTE: controlla se Buildozer è fallito
           exit_code=${PIPESTATUS[0]}
           if [ $exit_code -ne 0 ]; then
             echo ""
@@ -59,6 +63,10 @@ jobs:
             echo "╚══════════════════════════════════════════════════════════════╝"
             exit $exit_code
           fi
+
+      - name: Check disk space after
+        if: always()
+        run: df -h
 
       - name: Upload logs on failure
         if: failure()
