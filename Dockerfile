@@ -35,7 +35,6 @@ RUN apt update -qq > /dev/null \
 # Installa buildozer e dipendenze globalmente (come root)
 RUN pip install --upgrade \
     buildozer \
-    "Cython<0.30" \
     virtualenv \
     pip \
     appdirs \
@@ -45,7 +44,10 @@ RUN pip install --upgrade \
     toml \
     build
 
-# Nessun USER switch: in CI/CD lavoriamo come root per evitare problemi di permessi
+# IMPORTANTE: Cython va installato con --user perché il hostpython3 di p4a
+# (quello che compila le estensioni C) vede solo i pacchetti user-site
+RUN pip install --user --upgrade "Cython<0.30"
+
 WORKDIR /root/hostcwd
 
 ENTRYPOINT ["buildozer"]
