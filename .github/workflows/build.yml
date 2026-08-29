@@ -18,7 +18,8 @@ jobs:
           path: |
             docker/buildozer
             docker/gradle
-          key: buildozer-cache-${{ runner.os }}-${{ hashFiles('Dockerfile', 'game/buildozer.spec') }}
+          key: buildozer-cache-v3-${{ runner.os }}-${{ hashFiles('Dockerfile', 'game/buildozer.spec') }}
+
           restore-keys: |
             buildozer-cache-${{ runner.os }}-
 
