@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -18,12 +19,10 @@ jobs:
           path: |
             docker/buildozer
             docker/gradle
-          key: buildozer-cache-v3-${{ runner.os }}-${{ hashFiles('Dockerfile', 'game/buildozer.spec') }}
-
+          key: buildozer-cache-v4-${{ runner.os }}-${{ hashFiles('Dockerfile', 'game/buildozer.spec') }}
           restore-keys: |
             buildozer-cache-${{ runner.os }}-
 
-      # PULIZIA CACHE: rimuove Python 3.14 o build corrotti da cache vecchia
       - name: Clean stale builds
         run: |
           rm -rf docker/buildozer/android/platform/build-*/build/other_builds/python3
@@ -39,11 +38,11 @@ jobs:
           chmod -R 777 docker/buildozer docker/gradle
           chmod -R 777 game
 
-      # Build unico: Python 3.11.9 + Cython 0.29.37 + pygame-ce
       - name: Build APK
         run: |
           docker run --rm \
             --user root \
+            -e JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 \
             -v "$(pwd)/docker/buildozer":/root/.buildozer \
             -v "$(pwd)/docker/gradle":/root/.gradle \
             -v "$(pwd)/game":/root/hostcwd \
