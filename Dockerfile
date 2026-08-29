@@ -2,7 +2,8 @@ FROM python:3.11-slim
 
 ENV LANG="en_US.UTF-8" \
     LANGUAGE="en_US.UTF-8" \
-    LC_ALL="en_US.UTF-8"
+    LC_ALL="en_US.UTF-8" \
+    JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 
 RUN apt update -qq > /dev/null \
     && DEBIAN_FRONTEND=noninteractive apt install -qq --yes --no-install-recommends \
@@ -21,7 +22,7 @@ RUN apt update -qq > /dev/null \
     libssl-dev \
     libtinfo6 \
     libtool \
-    default-jdk \
+    openjdk-17-jdk \
     patch \
     pkg-config \
     sudo \
@@ -32,7 +33,6 @@ RUN apt update -qq > /dev/null \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
     && rm -rf /var/lib/apt/lists/*
 
-# Buildozer e dipendenze
 RUN pip install --upgrade \
     buildozer \
     virtualenv \
@@ -44,7 +44,6 @@ RUN pip install --upgrade \
     toml \
     build
 
-# Allineato con buildozer.spec: Cython 0.29.37 (stabile con Python 3.11)
 RUN pip install --user --upgrade "Cython==0.29.37"
 
 WORKDIR /root/hostcwd
