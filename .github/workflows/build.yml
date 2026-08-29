@@ -9,10 +9,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Scarica il codice
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Cache build (velocizza le prossime volte)
+      - name: Cache build
         uses: actions/cache@v4
         with:
           path: |
@@ -22,20 +22,23 @@ jobs:
           restore-keys: |
             buildozer-cache-${{ runner.os }}-
 
-      - name: Crea immagine Docker
+      - name: Build Docker image
         run: docker build -t kivy/buildozer .
 
-      - name: Compila APK
+      - name: Build APK
         run: |
           mkdir -p docker/buildozer docker/gradle
           chmod -R 777 docker/buildozer docker/gradle
+          # FIX: dai i permessi di scrittura alla cartella game
+          chmod -R 777 game
           docker run --rm \
-            -v "$(pwd)/docker/buildozer":/home/user/.buildozer \
-            -v "$(pwd)/docker/gradle":/home/user/.gradle \
-            -v "$(pwd)/game":/home/user/hostcwd \
+            --user root \
+            -v "$(pwd)/docker/buildozer":/root/.buildozer \
+            -v "$(pwd)/docker/gradle":/root/.gradle \
+            -v "$(pwd)/game":/root/hostcwd \
             kivy/buildozer -v android debug
 
-      - name: Salva APK come download
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Disegna-e-Anima-Pro-APK
