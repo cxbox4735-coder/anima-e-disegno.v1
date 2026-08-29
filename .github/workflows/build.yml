@@ -36,22 +36,27 @@ jobs:
           python -m pip install --upgrade pip
           pip install buildozer cython
 
+      - name: Accept SDK licenses
+        run: |
+          mkdir -p ~/.android
+          echo "y" > /tmp/licenses.txt
+          while read line; do echo "y"; done < /dev/zero | \
+            $JAVA_HOME/bin/keytool -genkey -v -keystore ~/.android/debug.keystore \
+            -keyalg RSA -keysize 2048 -validity 10000 -alias androiddebugkey \
+            -keypass android -storepass android \
+            -dname "CN=Android Debug,O=Android,C=US" 2>/dev/null || true
+
       - name: Build APK Debug
         run: |
           buildozer -v android debug
-        timeout-minutes: 90
+        timeout-minutes: 120
+        env:
+          ANDROID_SDK_LICENSE: "y"
+          ANDROID_NDK_LICENSE: "y"
 
-      - name: Upload APK
+      - name: Upload APK on success
         uses: actions/upload-artifact@v4
         if: success()
         with:
           name: android-apk
           path: bin/*.apk
-
-      - name: Show build errors if failed
-        if: failure()
-        run: |
-          echo "=== Last 100 lines of buildozer.log ==="
-          tail -100 .buildozer/android/platform/build/dist/*/build/outputs/*.log || true
-          echo "=== Build directory listing ==="
-          ls -la .buildozer/android/platform/build/dist/ 2>/dev/null || echo "Build dir not found"
