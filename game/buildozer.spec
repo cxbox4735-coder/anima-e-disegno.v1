@@ -8,7 +8,7 @@ source.include_exts = py,png,jpg,kv,atlas,json,txt
 
 version = 1.0
 
-requirements = python3,pygame-ce
+requirements = python3,cython,pygame-ce
 
 orientation = landscape
 fullscreen = 1
