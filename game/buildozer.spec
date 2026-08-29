@@ -1,6 +1,3 @@
-# game/buildozer.spec
-# Sposta questo file in game/buildozer.spec
-
 [app]
 
 title = Disegna e Anima Pro
@@ -22,11 +19,10 @@ android.ndk_api = 21
 android.archs = arm64-v8a, armeabi-v7a
 android.accept_sdk_license = True
 
-# Permessi per salvare/esportare (opzionale ma consigliato)
 android.permissions = WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
 
 p4a.local_recipes = ./p4a-recipes
 
 [buildozer]
 log_level = 2
-warn_on_root = 1
+warn_on_root = 0
