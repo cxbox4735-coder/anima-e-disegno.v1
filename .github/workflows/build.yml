@@ -24,22 +24,21 @@ jobs:
           restore-keys: |
             buildozer-cache-${{ runner.os }}-
 
-      # Se la cache è vecchia, forza la ricostruzione di hostpython3
+      # Forza cancellazione ampia della cache così hostpython3 verrà ricostruito
       - name: Clean stale hostpython3
         run: |
-          # Force remove any cached python-for-android platforms, dists and related SDK/NDK
-          # to guarantee hostpython3 will be rebuilt with the pinned python version
+          # Remove any cached python-for-android platforms, dists and related SDK/NDK
           rm -rf docker/buildozer/android/platform || true
           rm -rf docker/buildozer/android/platform_* || true
           rm -rf docker/buildozer/apache-ant-* || true
           rm -rf docker/buildozer/android/sdk || true
           rm -rf docker/buildozer/android/ndk-* || true
           rm -rf docker/buildozer/android/ndk || true
-          # Also remove any previously-built dists to avoid mixing hostpython versions
+          # Remove any previously-built dists and builds
           rm -rf docker/buildozer/android/platform/build-* || true
           rm -rf docker/buildozer/android/platform/dists || true
           rm -rf docker/buildozer/android/platform/build || true
-          # Ensure directories exist for mounts
+          # Ensure dirs exist for mounts
           mkdir -p docker/buildozer docker/gradle
 
       - name: Build Docker image
@@ -50,8 +49,7 @@ jobs:
           chmod -R 777 docker/buildozer docker/gradle
           chmod -R 777 game
 
-      # Prima passata: scarica SDK/NDK e costruisce hostpython3.
-      # Fallirà su pygame-ce (manca Cython), ma hostpython3 verrà creato.
+      # Prima passata: scarica SDK/NDK e costruisce hostpython3
       - name: Bootstrap Buildozer (create hostpython3)
         run: |
           docker run --rm \
