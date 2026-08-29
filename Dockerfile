@@ -6,7 +6,7 @@ ENV LANG="en_US.UTF-8" \
     JAVA_HOME=/opt/jdk-17 \
     PATH="/opt/jdk-17/bin:${PATH}"
 
-# Installa Java 17 da Eclipse Temurin (stable, compatibile con Android SDK)
+# Installa Java 17 da Eclipse Temurin (compatibile con vecchie Android CLI Tools)
 RUN apt update -qq > /dev/null \
     && DEBIAN_FRONTEND=noninteractive apt install -qq --yes --no-install-recommends \
     wget \
@@ -18,7 +18,7 @@ RUN apt update -qq > /dev/null \
     && apt-get purge -y --auto-remove wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Installa dipendenze di sistema
+# Dipendenze di sistema
 RUN apt update -qq > /dev/null \
     && DEBIAN_FRONTEND=noninteractive apt install -qq --yes --no-install-recommends \
     locales \
