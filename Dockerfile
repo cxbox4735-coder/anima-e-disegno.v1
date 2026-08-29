@@ -6,7 +6,7 @@ ENV LANG="en_US.UTF-8" \
     JAVA_HOME=/opt/jdk-17 \
     PATH="/opt/jdk-17/bin:${PATH}"
 
-# Installa Java 17 da Eclipse Temurin (compatibile con vecchie Android CLI Tools)
+# Installa Java 17 da Eclipse Temurin
 RUN apt update -qq > /dev/null \
     && DEBIAN_FRONTEND=noninteractive apt install -qq --yes --no-install-recommends \
     wget \
@@ -18,7 +18,7 @@ RUN apt update -qq > /dev/null \
     && apt-get purge -y --auto-remove wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Dipendenze di sistema
+# Dipendenze di sistema (aggiunte librerie grafiche per SDL2)
 RUN apt update -qq > /dev/null \
     && DEBIAN_FRONTEND=noninteractive apt install -qq --yes --no-install-recommends \
     locales \
@@ -30,9 +30,12 @@ RUN apt update -qq > /dev/null \
     gettext \
     git \
     libffi-dev \
+    libgl1-mesa-dev \
+    libglu1-mesa-dev \
     libltdl-dev \
     libncurses5-dev \
     libncursesw5-dev \
+    libpulse-dev \
     libssl-dev \
     libtinfo6 \
     libtool \
