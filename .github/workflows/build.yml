@@ -46,6 +46,19 @@ jobs:
             -v "$(pwd)/docker/gradle":/root/.gradle \
             -v "$(pwd)/game":/root/hostcwd \
             kivy/buildozer -v android debug 2>&1 | tee buildozer.log
+          
+          # ✅ IMPORTANTE: controlla se Buildozer è fallito
+          exit_code=${PIPESTATUS[0]}
+          if [ $exit_code -ne 0 ]; then
+            echo ""
+            echo "╔══════════════════════════════════════════════════════════════╗"
+            echo "║                  BUILD FAILED (exit $exit_code)              ║"
+            echo "╠══════════════════════════════════════════════════════════════╣"
+            echo "  Last 150 lines of buildozer.log:"
+            tail -n 150 buildozer.log
+            echo "╚══════════════════════════════════════════════════════════════╝"
+            exit $exit_code
+          fi
 
       - name: Upload logs on failure
         if: failure()
@@ -53,13 +66,6 @@ jobs:
         with:
           name: buildozer-failure-log
           path: buildozer.log
-
-      - name: Show last 100 lines on failure
-        if: failure()
-        run: |
-          echo "========== LAST 100 LINES OF BUILD LOG =========="
-          tail -n 100 buildozer.log || true
-          echo "================================================="
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
