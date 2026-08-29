@@ -1,79 +1,51 @@
-name: Build APK with Buildozer
+name: Build Android APK
 
 on:
   push:
-    branches:
-      - main
-    tags:
-      - v*
-  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
   build:
-    name: Build Android APK
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
         with:
-          python-version: '3.11'
+          java-version: '17'
+          distribution: 'temurin'
 
       - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            git zip unzip openjdk-17-jdk \
-            python3-pip python3-venv \
+            python3-pip build-essential git ffmpeg \
             libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
-            libpng-dev libjpeg-dev zlib1g-dev
+            libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev \
+            zlib1g-dev libgles2-mesa-dev
 
-      - name: Install Buildozer and Cython
+      - name: Install Buildozer & Cython
         run: |
-          python -m pip install --upgrade pip
-          pip install buildozer cython
+          pip3 install --user buildozer cython
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Accept Android SDK licenses
-        run: |
-          mkdir -p ~/.android
-          echo '<?xml version="1.0" encoding="UTF-8"?>
-          <licenses>
-            <license id="android-sdk-license" type="user">
-              <accepted-by>build</accepted-by>
-              <accepted-on>1640000000000</accepted-on>
-            </license>
-            <license id="android-sdk-preview-license" type="user">
-              <accepted-by>build</accepted-by>
-              <accepted-on>1640000000000</accepted-on>
-            </license>
-            <license id="intel-android-extra-license" type="user">
-              <accepted-by>build</accepted-by>
-              <accepted-on>1640000000000</accepted-on>
-            </license>
-            <license id="mips-android-system-image-license" type="user">
-              <accepted-by>build</accepted-by>
-              <accepted-on>1640000000000</accepted-on>
-            </license>
-          </licenses>' > ~/.android/licenses.xml
-        shell: bash
-
-      - name: Build APK Debug
-        run: |
-          buildozer -v android debug
-        timeout-minutes: 120
-
-      - name: Upload APK on success
-        uses: actions/upload-artifact@v4
-        if: success()
+      - name: Cache Buildozer dependencies
+        uses: actions/cache@v4
         with:
-          name: android-apk
-          path: bin/*.apk
+          path: |
+            ~/.buildozer
+            ./.buildozer
+          key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
 
-      - name: Show error logs if failed
-        if: failure()
+      - name: Build APK
         run: |
-          echo "=== Last buildozer output ===" 
-          cat .buildozer/android/platform/build/build.log 2>/dev/null | tail -50 || echo "No log found"
+          buildozer android debug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-debug
+          path: bin/*.apk
