@@ -27,8 +27,19 @@ jobs:
       # Se la cache è vecchia, forza la ricostruzione di hostpython3
       - name: Clean stale hostpython3
         run: |
-          rm -rf docker/buildozer/android/platform/build-*/build/other_builds/hostpython3
-          rm -rf docker/buildozer/android/platform/build-*/build/other_builds/pygame-ce
+          # Force remove any cached python-for-android platforms, dists and related SDK/NDK
+          # to guarantee hostpython3 will be rebuilt with the pinned python version
+          rm -rf docker/buildozer/android/platform || true
+          rm -rf docker/buildozer/android/platform_* || true
+          rm -rf docker/buildozer/apache-ant-* || true
+          rm -rf docker/buildozer/android/sdk || true
+          rm -rf docker/buildozer/android/ndk-* || true
+          rm -rf docker/buildozer/android/ndk || true
+          # Also remove any previously-built dists to avoid mixing hostpython versions
+          rm -rf docker/buildozer/android/platform/build-* || true
+          rm -rf docker/buildozer/android/platform/dists || true
+          rm -rf docker/buildozer/android/platform/build || true
+          # Ensure directories exist for mounts
           mkdir -p docker/buildozer docker/gradle
 
       - name: Build Docker image
