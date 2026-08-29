@@ -1,6 +1,7 @@
 FROM python:3.11-slim
 
 ENV USER="user"
+ENV HOME="/home/${USER}"
 ENV HOME_DIR="/home/${USER}"
 ENV WORK_DIR="${HOME_DIR}/hostcwd" \
     SRC_DIR="${HOME_DIR}/src" \
@@ -37,13 +38,10 @@ RUN apt update -qq > /dev/null \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
     && rm -rf /var/lib/apt/lists/*
 
-# prepares non root env
 RUN useradd --create-home --shell /bin/bash ${USER}
-# with sudo access and no password
 RUN usermod -append --groups sudo ${USER}
 RUN echo "%sudo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
-# installs buildozer and dependencies
 RUN pip install --upgrade \
     buildozer \
     "Cython<0.30" \
