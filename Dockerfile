@@ -3,8 +3,22 @@ FROM python:3.11-slim
 ENV LANG="en_US.UTF-8" \
     LANGUAGE="en_US.UTF-8" \
     LC_ALL="en_US.UTF-8" \
-    JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+    JAVA_HOME=/opt/jdk-17 \
+    PATH="/opt/jdk-17/bin:${PATH}"
 
+# Installa Java 17 da Eclipse Temurin (stable, compatibile con Android SDK)
+RUN apt update -qq > /dev/null \
+    && DEBIAN_FRONTEND=noninteractive apt install -qq --yes --no-install-recommends \
+    wget \
+    ca-certificates \
+    && wget -q https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.12%2B7/OpenJDK17U-jdk_x64_linux_hotspot_17.0.12_7.tar.gz \
+    && tar -xzf OpenJDK17U-jdk_x64_linux_hotspot_17.0.12_7.tar.gz -C /opt \
+    && mv /opt/jdk-17.0.12+7 /opt/jdk-17 \
+    && rm OpenJDK17U-jdk_x64_linux_hotspot_17.0.12_7.tar.gz \
+    && apt-get purge -y --auto-remove wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Installa dipendenze di sistema
 RUN apt update -qq > /dev/null \
     && DEBIAN_FRONTEND=noninteractive apt install -qq --yes --no-install-recommends \
     locales \
@@ -22,7 +36,6 @@ RUN apt update -qq > /dev/null \
     libssl-dev \
     libtinfo6 \
     libtool \
-    openjdk-17-jdk \
     patch \
     pkg-config \
     sudo \
@@ -33,6 +46,7 @@ RUN apt update -qq > /dev/null \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
     && rm -rf /var/lib/apt/lists/*
 
+# Buildozer e dipendenze Python
 RUN pip install --upgrade \
     buildozer \
     virtualenv \
